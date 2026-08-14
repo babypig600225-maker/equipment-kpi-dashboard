@@ -45,6 +45,14 @@ st.markdown("""
 SRS_NAMES = ['押出機','單機型壓鑄成型機','自動射出成型機','液態矽膠射出成型機','無廢料射出成型機','後射式矽膠射出成型機']
 SRS_COLORS = ['#378ADD','#1D9E75','#BA7517','#D85A30','#7F77DD','#D4537E']
 COLOR_MAP = dict(zip(SRS_NAMES, SRS_COLORS))
+SRS_SHORT = {
+    '押出機': '押出機',
+    '單機型壓鑄成型機': '壓鑄',
+    '自動射出成型機': '自動射出',
+    '液態矽膠射出成型機': '液態矽膠',
+    '無廢料射出成型機': '無廢料',
+    '後射式矽膠射出成型機': '後射式矽膠',
+}
 MONTH_OFFSETS = [2,7,12,17,22,27,32,37,42,47,52,57]
 
 def get_series(name):
@@ -106,7 +114,8 @@ def parse_excel(file_bytes):
         std_h = 0
         try: std_h = float(std_row[ci]) if std_row[ci] else 0
         except: pass
-        months.append({'label': year_label+label, 'short': label, 'offset': ci, 'stdHrs': std_h})
+        if std_h > 0:  # 只保留有標準時數的月份（有實際資料）
+            months.append({'label': year_label+label, 'short': label, 'offset': ci, 'stdHrs': std_h})
 
     # 機台資料起始列
     machine_start = month_row_idx + 3
@@ -145,11 +154,22 @@ def parse_excel(file_bytes):
         total, comp = 0, 0
         if sname:
             ws2 = wb[sname]
-            for row2 in ws2.iter_rows(min_row=1, max_row=10, values_only=True):
-                for cell in (row2 or []):
-                    v = pn(cell)
-                    if 0.5 < v < 1.0 and comp == 0: comp = v
-                    if 30 <= v <= 500 and v == int(v) and total == 0: total = int(v)
+            for ri2, row2 in enumerate(ws2.iter_rows(min_row=1, max_row=6, values_only=True)):
+                row2 = list(row2) if row2 else []
+                # 第3列（index2）= 報修件數，col 2
+                if ri2 == 2 and len(row2) > 2:
+                    v = pn(row2[2])
+                    if 30 <= v <= 500: total = int(v)
+                # 第4列（index3）= 完成率，col 5
+                if ri2 == 3 and len(row2) > 5:
+                    v = pn(row2[5])
+                    if 0.5 < v < 1.0: comp = v
+                # 備援：掃描找完成率
+                if comp == 0 or total == 0:
+                    for cell in (row2 or []):
+                        v = pn(cell)
+                        if 0.5 < v < 1.0 and comp == 0: comp = v
+                        if 30 <= v <= 500 and v == int(v) and total == 0: total = int(v)
         monthly_stats.append({'totalRepairs': total, 'completionRate': comp})
 
     return months, machines, monthly_stats
@@ -263,18 +283,20 @@ def main():
                 color = COLOR_MAP[name]
                 y = [series_agg[name][i]['mtbf'] for i in midxs]
                 fig.add_trace(go.Scatter(
-                    x=xlabels, y=y, name=name,
+                    x=xlabels, y=y, name=SRS_SHORT.get(name, name),
                     mode='lines+markers', line=dict(color=color, width=2),
-                    marker=dict(size=6), connectgaps=True
+                    marker=dict(size=7), connectgaps=True
                 ))
             fig.update_layout(
-                title=dict(text="MTBF 趨勢（hr / 次）<br><sup style='color:#888'>平均無故障間隔時間 — 數值越高代表機台越可靠</sup>", font_size=14),
-                height=280, margin=dict(t=60,b=30,l=40,r=10),
-                legend=dict(orientation='h', yanchor='bottom', y=1.02, font_size=10),
+                title=dict(text="MTBF 趨勢（hr / 次）", font_size=14, x=0),
+                height=320, margin=dict(t=50,b=40,l=50,r=120),
+                legend=dict(orientation='v', x=1.01, y=1, font_size=10,
+                            bgcolor='rgba(255,255,255,0.8)', bordercolor='#eae8e1', borderwidth=1),
                 yaxis_title="MTBF (h)", plot_bgcolor='white', paper_bgcolor='white',
                 yaxis=dict(gridcolor='#eae8e1'), xaxis=dict(gridcolor='#eae8e1')
             )
             st.plotly_chart(fig, use_container_width=True)
+            st.caption("＊ MTBF（平均無故障間隔時間）— 數值越高代表機台越可靠")
 
         with c2:
             fig2 = go.Figure()
@@ -282,18 +304,20 @@ def main():
                 color = COLOR_MAP[name]
                 y = [series_agg[name][i]['mttr'] if series_agg[name][i]['f']>0 else None for i in midxs]
                 fig2.add_trace(go.Scatter(
-                    x=xlabels, y=y, name=name,
+                    x=xlabels, y=y, name=SRS_SHORT.get(name, name),
                     mode='lines+markers', line=dict(color=color, width=2),
-                    marker=dict(size=6), connectgaps=True
+                    marker=dict(size=7), connectgaps=True
                 ))
             fig2.update_layout(
-                title=dict(text="MTTR 趨勢（hr / 次）<br><sup style='color:#888'>平均修復時間 — 數值越低代表維修效率越高</sup>", font_size=14),
-                height=280, margin=dict(t=60,b=30,l=40,r=10),
-                legend=dict(orientation='h', yanchor='bottom', y=1.02, font_size=10),
+                title=dict(text="MTTR 趨勢（hr / 次）", font_size=14, x=0),
+                height=320, margin=dict(t=50,b=40,l=50,r=120),
+                legend=dict(orientation='v', x=1.01, y=1, font_size=10,
+                            bgcolor='rgba(255,255,255,0.8)', bordercolor='#eae8e1', borderwidth=1),
                 yaxis_title="MTTR (h)", plot_bgcolor='white', paper_bgcolor='white',
                 yaxis=dict(gridcolor='#eae8e1'), xaxis=dict(gridcolor='#eae8e1')
             )
             st.plotly_chart(fig2, use_container_width=True)
+            st.caption("＊ MTTR（平均修復時間）— 數值越低代表維修效率越高")
 
         # ── Row 2: 故障 + 維修 + 停工 ──
         c1, c2, c3 = st.columns(3)
@@ -303,10 +327,12 @@ def main():
             for name in filtered_series:
                 color = COLOR_MAP[name]
                 y = [series_agg[name][i]['f'] for i in midxs]
-                fig3.add_trace(go.Bar(x=xlabels, y=y, name=name, marker_color=color, opacity=0.8))
+                fig3.add_trace(go.Bar(x=xlabels, y=y, name=SRS_SHORT.get(name,name), marker_color=color, opacity=0.85))
             fig3.update_layout(
-                title="故障次數（月別）", height=250, margin=dict(t=40,b=30,l=40,r=10),
-                barmode='group', legend=dict(font_size=9), plot_bgcolor='white',
+                title="故障次數（月別）", height=300, margin=dict(t=40,b=30,l=40,r=10),
+                barmode='group',
+                legend=dict(orientation='h', y=-0.25, font_size=10, xanchor='center', x=0.5),
+                plot_bgcolor='white',
                 xaxis=dict(gridcolor='#eae8e1'), yaxis=dict(gridcolor='#eae8e1')
             )
             st.plotly_chart(fig3, use_container_width=True)
@@ -316,11 +342,12 @@ def main():
             for name in filtered_series:
                 color = COLOR_MAP[name]
                 y = [series_agg[name][i]['r'] for i in midxs]
-                fig4.add_trace(go.Scatter(x=xlabels, y=y, name=name, mode='lines+markers',
+                fig4.add_trace(go.Scatter(x=xlabels, y=y, name=SRS_SHORT.get(name,name), mode='lines+markers',
                     line=dict(color=color, width=2), marker=dict(size=5), connectgaps=True))
             fig4.update_layout(
-                title="維修工時（hr，月別）", height=250, margin=dict(t=40,b=30,l=40,r=10),
-                legend=dict(font_size=9), yaxis_title="hr", plot_bgcolor='white',
+                title="維修工時（hr，月別）", height=300, margin=dict(t=40,b=30,l=40,r=10),
+                legend=dict(orientation='h', y=-0.25, font_size=10, xanchor='center', x=0.5),
+                yaxis_title="hr", plot_bgcolor='white',
                 xaxis=dict(gridcolor='#eae8e1'), yaxis=dict(gridcolor='#eae8e1')
             )
             st.plotly_chart(fig4, use_container_width=True)
@@ -330,10 +357,12 @@ def main():
             for name in filtered_series:
                 color = COLOR_MAP[name]
                 y = [series_agg[name][i]['d'] for i in midxs]
-                fig5.add_trace(go.Bar(x=xlabels, y=y, name=name, marker_color=color, opacity=0.8))
+                fig5.add_trace(go.Bar(x=xlabels, y=y, name=SRS_SHORT.get(name,name), marker_color=color, opacity=0.85))
             fig5.update_layout(
-                title="停工工時（hr，月別）", height=250, margin=dict(t=40,b=30,l=40,r=10),
-                barmode='group', legend=dict(font_size=9), plot_bgcolor='white',
+                title="停工工時（hr，月別）", height=300, margin=dict(t=40,b=30,l=40,r=10),
+                barmode='group',
+                legend=dict(orientation='h', y=-0.25, font_size=10, xanchor='center', x=0.5),
+                plot_bgcolor='white',
                 xaxis=dict(gridcolor='#eae8e1'), yaxis=dict(gridcolor='#eae8e1')
             )
             st.plotly_chart(fig5, use_container_width=True)
