@@ -362,7 +362,7 @@ def main():
                 with c1:
                     fig8=go.Figure(go.Bar(x=[r['code'] for r in hf],
                         y=[round(sum(r['vB'])/len(r['vB']),1) if r['vB'] else 0 for r in hf],
-                        marker_color=[c+'99' for c in bc],marker_line_color=bc,marker_line_width=1.5,opacity=0.9))
+                        marker_color=bc,opacity=0.75,marker_line_color=bc,marker_line_width=1.5))
                     fig8.update_layout(title="MTBF 分佈",height=320,margin=dict(t=40,b=90,l=40,r=10),
                         plot_bgcolor='white',paper_bgcolor='white',
                         xaxis=dict(tickangle=45),yaxis=dict(gridcolor='#eae8e1',title='h'))
@@ -371,7 +371,7 @@ def main():
                     mt_vals=[round(sum(r['vT'])/len(r['vT']),1) if r['vT'] else 0 for r in hf]
                     mtc=['#1f7a4d' if v<=5 else '#7b4f00' if v<=15 else '#a32d2d' for v in mt_vals]
                     fig9=go.Figure(go.Bar(x=[r['code'] for r in hf],y=mt_vals,
-                        marker_color=[c+'99' for c in mtc],marker_line_color=mtc,marker_line_width=1.5))
+                        marker_color=mtc,opacity=0.85,marker_line_color=mtc,marker_line_width=1.5))
                     fig9.update_layout(title="MTTR 比較",height=320,margin=dict(t=40,b=90,l=40,r=10),
                         plot_bgcolor='white',paper_bgcolor='white',
                         xaxis=dict(tickangle=45),yaxis=dict(gridcolor='#eae8e1',title='h'))
