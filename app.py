@@ -196,11 +196,10 @@ def main():
     # 嘗試從 GitHub 讀取共用資料
     shared = gh_read()
 
-    # ── 管理員上傳區（側邊隱藏式）──
-    with st.sidebar:
-        st.markdown("### 🔧 管理員更新資料")
-        st.caption("上傳新 Excel 後，所有人立即看到最新資料")
-        up = st.file_uploader("上傳設備維修統計 Excel", type=['xlsx'])
+    # ── 管理員上傳區（主畫面展開式）──
+    with st.expander("🔧 管理員更新資料", expanded=not bool(shared)):
+        st.caption("上傳新 Excel 後，所有人立即看到最新資料（僅管理員操作）")
+        up = st.file_uploader("上傳設備維修統計 Excel", type=['xlsx'], label_visibility='collapsed')
         if up:
             with st.spinner("解析並上傳中..."):
                 try:
