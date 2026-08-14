@@ -10,9 +10,9 @@ st.set_page_config(
 )
 st.markdown("""
 <style>
-    #MainMenu, footer { visibility: hidden; }
-    .block-container { padding-top:0.5rem !important; }
-    [data-testid="stAppViewContainer"]>[data-testid="stVerticalBlock"] { gap:0; }
+    #MainMenu, footer, header { visibility: hidden; }
+    .block-container { padding-top:1rem !important; max-width:100% !important; }
+    .stMetric { background:#f5f4f0; border-radius:8px; padding:12px 16px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -182,17 +182,18 @@ def main():
     mshorts=[m['short'] for m in months]
 
     # ── 標頭 ──
-    c1,c2=st.columns([5,1])
-    with c1:
-        st.markdown(f"""
-        <div style="padding:12px 0 0">
-        <div style="font-size:20px;font-weight:700;color:#1A3A5C">🏭 富強醫材 — 設備維修 KPI 儀表板</div>
-        <div style="font-size:12px;color:#888780;margin-top:4px">
-            📁 {fn}&nbsp;&nbsp;&nbsp;📅 {mlabels[0]} – {mlabels[-1]}&nbsp;&nbsp;&nbsp;富強醫材股份有限公司
-        </div></div>""", unsafe_allow_html=True)
-    with c2:
-        if st.button("↩ 重新上傳",use_container_width=True):
-            del st.session_state['data']; st.rerun()
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 4px">
+        <div>
+            <div style="font-size:20px;font-weight:700;color:#1A3A5C">🏭 富強醫材 — 設備維修 KPI 儀表板</div>
+            <div style="font-size:12px;color:#888780;margin-top:4px">
+                📁 {fn}&nbsp;&nbsp;&nbsp;📅 {mlabels[0]} – {mlabels[-1]}&nbsp;&nbsp;&nbsp;富強醫材股份有限公司
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("↩ 重新上傳"):
+        del st.session_state['data']; st.rerun()
 
     st.divider()
     tab1,tab2=st.tabs(["📊 機台系列","🔍 個別機台"])
