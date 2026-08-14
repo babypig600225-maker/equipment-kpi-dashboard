@@ -26,10 +26,9 @@ CSHT = dict(zip(SRS, SRSN))
 # ── GitHub 設定 ──
 try:
     GH_TOKEN = st.secrets["GITHUB_TOKEN"]
-    GH_REPO  = st.secrets["GITHUB_REPO"]
 except:
     GH_TOKEN = ""
-    GH_REPO  = ""
+GH_REPO = "babypig600225-maker/equipment-kpi-dashboard"
 
 GH_PATH   = "data.json"
 GH_RAW    = f"https://raw.githubusercontent.com/{GH_REPO}/main/{GH_PATH}"
