@@ -52,7 +52,10 @@ def gh_write(data_dict, filename=""):
         payload = {"message": f"Update KPI data: {filename}", "content": content, "branch": "main"}
         if sha: payload["sha"] = sha
         r2 = requests.put(GH_API, json=payload, headers=GH_HDRS, timeout=15)
-        return r2.status_code in [200, 201]
+        if r2.status_code not in [200, 201]:
+            st.error(f"GitHub API 回應 {r2.status_code}：{r2.json().get('message','unknown error')}")
+            return False
+        return True
     except Exception as e:
         st.error(f"上傳 GitHub 失敗：{e}")
         return False
